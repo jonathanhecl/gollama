@@ -48,6 +48,13 @@ func TestGollama_HasModel(t *testing.T) {
 			want:    true,
 			wantErr: false,
 		},
+		{
+			name:    "HasModel",
+			c:       New("llama3.2"),
+			args:    args{model: "notamodel"},
+			want:    false,
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

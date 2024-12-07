@@ -33,7 +33,7 @@ func (c *Gollama) HasModel(model string) (bool, error) {
 		}
 	}
 
-	return false, errors.New("model not found")
+	return false, nil
 }
 
 // ModelSize returns the size of a model on the server.

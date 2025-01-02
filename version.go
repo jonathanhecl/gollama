@@ -1,8 +1,10 @@
 package gollama
 
-func (c *Gollama) Version() (string, error) {
+import "context"
+
+func (c *Gollama) Version(ctx context.Context) (string, error) {
 	var resp versionResponse
-	c.apiGet("/api/version", &resp)
+	c.apiGet(ctx, "/api/version", &resp)
 
 	return resp.Version, nil
 }

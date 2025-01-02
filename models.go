@@ -1,17 +1,18 @@
 package gollama
 
 import (
+	"context"
 	"errors"
 	"fmt"
 )
 
-func (c *Gollama) ListModels() ([]ModelInfo, error) {
+func (c *Gollama) ListModels(ctx context.Context) ([]ModelInfo, error) {
 	type tagsResponse struct {
 		Models []ModelInfo `json:"models"`
 	}
 
 	var r tagsResponse
-	c.apiGet("/api/tags", &r)
+	c.apiGet(ctx, "/api/tags", &r)
 
 	return r.Models, nil
 }
@@ -21,8 +22,8 @@ func (c *Gollama) ListModels() ([]ModelInfo, error) {
 // The function will return an error if the request fails.
 //
 // The function will return false if the model is not found on the server.
-func (c *Gollama) HasModel(model string) (bool, error) {
-	models, err := c.ListModels()
+func (c *Gollama) HasModel(ctx context.Context, model string) (bool, error) {
+	models, err := c.ListModels(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -41,8 +42,8 @@ func (c *Gollama) HasModel(model string) (bool, error) {
 // The function will return an error if the model is not found.
 //
 // The function will return 0 if the model is not found.
-func (c *Gollama) ModelSize(model string) (int, error) {
-	models, err := c.ListModels()
+func (c *Gollama) ModelSize(ctx context.Context, model string) (int, error) {
+	models, err := c.ListModels(ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -61,14 +62,14 @@ func (c *Gollama) ModelSize(model string) (int, error) {
 // The function will return an error if the request fails.
 //
 // The function will return an error if the model is not found on the server.
-func (c *Gollama) PullModel(model string) error {
+func (c *Gollama) PullModel(ctx context.Context, model string) error {
 	req := pullRequest{
 		Model:  model,
 		Stream: false,
 	}
 
 	var resp pullResponse
-	c.apiPost("/api/pull", &resp, req)
+	c.apiPost(ctx, "/api/pull", &resp, req)
 
 	if resp.Status != "success" {
 		return fmt.Errorf("failed to pull model %s", model)
@@ -83,19 +84,19 @@ func (c *Gollama) PullModel(model string) error {
 // The function will return an error if the model is not found on the server.
 //
 // If no model is specified, the model name set in the Gollama object is used.
-func (c *Gollama) PullIfMissing(model ...string) error {
+func (c *Gollama) PullIfMissing(ctx context.Context, model ...string) error {
 	if len(model) == 0 {
 		model = []string{c.ModelName}
 	}
 
 	for _, m := range model {
-		hasModel, err := c.HasModel(m)
+		hasModel, err := c.HasModel(ctx, m)
 		if err != nil {
 			return err
 		}
 
 		if !hasModel {
-			return c.PullModel(m)
+			return c.PullModel(ctx, m)
 		}
 	}
 
@@ -108,7 +109,7 @@ func (c *Gollama) PullIfMissing(model ...string) error {
 // it defaults to using the model name set in the Gollama object.
 //
 // It returns a slice of ModelDetails for each requested model, or an error if the request fails.
-func (c *Gollama) GetDetails(model ...string) ([]ModelDetails, error) {
+func (c *Gollama) GetDetails(ctx context.Context, model ...string) ([]ModelDetails, error) {
 	if len(model) == 0 {
 		model = []string{c.ModelName}
 	}
@@ -121,7 +122,7 @@ func (c *Gollama) GetDetails(model ...string) ([]ModelDetails, error) {
 		}
 
 		var resp ModelDetails
-		err := c.apiPost("/api/show", &resp, req)
+		err := c.apiPost(ctx, "/api/show", &resp, req)
 		if err != nil {
 			return nil, err
 		}

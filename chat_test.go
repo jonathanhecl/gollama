@@ -1,6 +1,7 @@
 package gollama
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 )
@@ -90,7 +91,7 @@ func TestGollama_Chat(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.c.Verbose = true
-			got, err := tt.c.Chat(tt.args.Prompt, tt.args.Options)
+			got, err := tt.c.Chat(context.Background(), tt.args.Prompt, tt.args.Options)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Gollama.Chat() error = %v, wantErr %v", err, tt.wantErr)
 				return

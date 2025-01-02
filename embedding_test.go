@@ -1,6 +1,7 @@
 package gollama
 
 import (
+	"context"
 	"testing"
 )
 
@@ -25,7 +26,7 @@ func TestGollama_Embedding(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.c.Embedding(tt.args.Prompt)
+			got, err := tt.c.Embedding(context.Background(), tt.args.Prompt)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Gollama.Embedding() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -1,6 +1,9 @@
 package gollama
 
-import "testing"
+import (
+	"context"
+	"testing"
+)
 
 func TestGollama_Version(t *testing.T) {
 	tests := []struct {
@@ -18,7 +21,7 @@ func TestGollama_Version(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.c.Version()
+			got, err := tt.c.Version(context.Background())
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Gollama.Version() error = %v, wantErr %v", err, tt.wantErr)
 				return

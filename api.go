@@ -2,6 +2,7 @@ package gollama
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -23,17 +24,22 @@ import (
 //
 // If the request fails, or the response cannot be unmarshaled, an error
 // is returned.
-func (c *Gollama) apiGet(path string, v interface{}) error {
+func (c *Gollama) apiGet(ctx context.Context, path string, v interface{}) error {
 	url, _ := url.JoinPath(c.ServerAddr, path)
 	if c.Verbose {
 		fmt.Printf("Sending a request to GET %s\n", url)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return err
 	}
 
 	HTTPClient := &http.Client{
 		Timeout: c.HTTPTimeout,
 	}
 
-	resp, err := HTTPClient.Get(url)
+	resp, err := HTTPClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -57,7 +63,7 @@ func (c *Gollama) apiGet(path string, v interface{}) error {
 //
 // The HTTPTimeout is used as the timeout for the HTTP request, except for
 // requests to the /api/pull endpoint, which is given the PullTimeout.
-func (c *Gollama) apiPost(path string, v interface{}, data interface{}) error {
+func (c *Gollama) apiPost(ctx context.Context, path string, v interface{}, data interface{}) error {
 	url, _ := url.JoinPath(c.ServerAddr, path)
 	if c.Verbose {
 		fmt.Printf("Sending a request to POST %s\n", url)
@@ -71,6 +77,13 @@ func (c *Gollama) apiPost(path string, v interface{}, data interface{}) error {
 		return err
 	}
 
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(reqBytes))
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
 	HTTPClient := &http.Client{
 		Timeout: c.HTTPTimeout,
 	}
@@ -79,7 +92,7 @@ func (c *Gollama) apiPost(path string, v interface{}, data interface{}) error {
 		HTTPClient.Timeout = c.PullTimeout
 	}
 
-	resp, err := HTTPClient.Post(url, "application/json", bytes.NewBuffer(reqBytes))
+	resp, err := HTTPClient.Do(req)
 	if err != nil {
 		if c.Verbose {
 			fmt.Printf("Failed to send request: %s\n", err)

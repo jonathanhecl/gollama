@@ -1,6 +1,7 @@
 package gollama
 
 import (
+	"context"
 	"fmt"
 	"strings"
 )
@@ -18,7 +19,7 @@ type ChatOption interface{}
 // The function returns a pointer to a ChatOuput object, which contains the response to the prompt,
 // as well as some additional information about the response. If an error occurs, the function
 // returns nil and an error.
-func (c *Gollama) Chat(prompt string, options ...ChatOption) (*ChatOuput, error) {
+func (c *Gollama) Chat(ctx context.Context, prompt string, options ...ChatOption) (*ChatOuput, error) {
 	var (
 		temperature   float64
 		seed          = c.SeedOrNegative
@@ -101,7 +102,7 @@ func (c *Gollama) Chat(prompt string, options ...ChatOption) (*ChatOuput, error)
 	}
 
 	var resp chatResponse
-	err := c.apiPost("/api/chat", &resp, req)
+	err := c.apiPost(ctx, "/api/chat", &resp, req)
 	if err != nil {
 		return nil, err
 	}

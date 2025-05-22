@@ -20,7 +20,10 @@ func (c *Gollama) ListModels(ctx context.Context) ([]ModelInfo, error) {
 	}
 
 	var r tagsResponse
-	c.apiGet(ctx, "/api/tags", &r)
+	err := c.apiGet(ctx, "/api/tags", &r)
+	if err != nil {
+		return []ModelInfo{}, err
+	}
 
 	return r.Models, nil
 }
@@ -77,7 +80,10 @@ func (c *Gollama) PullModel(ctx context.Context, model string) error {
 	}
 
 	var resp pullResponse
-	c.apiPost(ctx, "/api/pull", &resp, req)
+	err := c.apiPost(ctx, "/api/pull", &resp, req)
+	if err != nil {
+		return err
+	}
 
 	if resp.Status != "success" {
 		return fmt.Errorf("failed to pull model %s", model)

@@ -66,7 +66,7 @@ func (c *Gollama) apiGet(ctx context.Context, path string, v interface{}) error 
 func (c *Gollama) apiPost(ctx context.Context, path string, v interface{}, data interface{}) error {
 	url, _ := url.JoinPath(c.ServerAddr, path)
 	if c.Verbose {
-		fmt.Printf("Sending a request to POST %s\n", url)
+		fmt.Printf("Sending a request to POST %s\nRequest body: %v\n", url, data)
 	}
 
 	reqBytes, err := json.Marshal(data)

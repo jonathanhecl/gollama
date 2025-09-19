@@ -28,7 +28,7 @@ func main() {
 	prompt := "what is the capital of Argentina?" // The prompt to send to the model
 
 	type Capital struct {
-		Capital string `required:"true"`
+		Capital string `required:"true" description:"the capital of a country"`
 	}
 
 	option := gollama.StructToStructuredFormat(Capital{}) // Convert the struct to a structured format
@@ -40,7 +40,19 @@ func main() {
 		fmt.Println("Error:", err)
 		return
 	}
-	fmt.Printf("\n%s\n", output.Content) // Print the response
+
+	// Response without decode
+	fmt.Printf("Response: %s\n", output.Content)
+
+	// Decode the response to the struct
+	var capital Capital
+	err := output.DecodeContent(&capital)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+
+	fmt.Printf("Capital: %s\n", capital.Capital) // Print the capital from the response
 }
 ```
 

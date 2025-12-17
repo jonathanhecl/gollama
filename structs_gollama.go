@@ -62,7 +62,11 @@ type PromptImage struct {
 }
 
 type ItemProperty struct {
-	Type string `json:"type"`
+	Type       string                    `json:"type"`
+	Properties map[string]FormatProperty `json:"properties,omitempty"`
+	Enum       []string                  `json:"enum,omitempty"`
+	Required   []string                  `json:"required,omitempty"`
+	Items      *ItemProperty             `json:"items,omitempty"`
 }
 
 type FormatProperty struct {

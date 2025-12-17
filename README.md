@@ -1,10 +1,28 @@
 # gollama
-Easy Ollama package for Golang
 
-### Example use
+**The easiest way to integrate Ollama into your Go applications.**
 
-> go get -u github.com/jonathanhecl/gollama
+`gollama` provides a simple, idiomatic Go wrapper for the [Ollama](https://ollama.com/) API, enabling you to build powerful AI applications with local LLMs. It supports advanced features like Structured Outputs, Vision, Function Calling, and the new **Model Context Protocol (MCP)**.
 
+## 🚀 Features
+
+- **Model Context Protocol (MCP)**: First-class support for connecting to external MCP servers (Filesystem, PostgreSQL, Supabase, Brave Search, etc.).
+- **Structured Outputs**: Automatically convert Go structs into JSON schemas for type-safe LLM responses.
+- **Vision Support**: Easily pass images to multimodal models like `llama3.2-vision`.
+- **Function Calling**: Define tools and let the model decide when to execute them.
+- **Auto-Management**: Automatically checks for and pulls models if they are missing.
+- **Embeddings**: Generate vector embeddings for RAG applications.
+
+## 📦 Installation
+
+```bash
+go get -u github.com/jonathanhecl/gollama
+```
+
+## 💡 Usage Examples
+
+### 1. Basic Chat
+The simplest way to interact with a model.
 
 ```go
 package main
@@ -12,75 +30,124 @@ package main
 import (
 	"context"
 	"fmt"
-
 	"github.com/jonathanhecl/gollama"
 )
 
 func main() {
 	ctx := context.Background()
-	g := gollama.New("llama3.2") // Create a new Gollama with the default model
-	g.Verbose = true // Enable verbose mode
-	if err := g.PullIfMissing(ctx); err != nil { // Pull the model if it is not available
-		fmt.Println("Error:", err)
-		return
+	g := gollama.New("llama3.2")
+
+	// Automatically pull the model if not present
+	if err := g.PullIfMissing(ctx); err != nil {
+		panic(err)
 	}
 
-	prompt := "what is the capital of Argentina?" // The prompt to send to the model
-
-	type Capital struct {
-		Capital string `required:"true" description:"the capital of a country"`
-	}
-
-	option := gollama.StructToStructuredFormat(Capital{}) // Convert the struct to a structured format
-
-	fmt.Printf("Option: %+v\n", option)
-
-	output, err := g.Chat(ctx, prompt, option) // Generate a response
+	response, err := g.Chat(ctx, "Why is the sky blue?")
 	if err != nil {
-		fmt.Println("Error:", err)
-		return
+		panic(err)
 	}
 
-	// Response without decode
-	fmt.Printf("Response: %s\n", output.Content)
-
-	// Decode the response to the struct
-	var capital Capital
-	err := output.DecodeContent(&capital)
-	if err != nil {
-		fmt.Println("Error:", err)
-		return
-	}
-
-	fmt.Printf("Capital: %s\n", capital.Capital) // Print the capital from the response
+	fmt.Println(response.Content)
 }
 ```
 
-### Features
+### 2. Model Context Protocol (MCP) 🌟
+Connect your LLM to the outside world using the standard Model Context Protocol. This allows you to use pre-built MCP servers without writing custom tool logic.
 
-- Support Vision models
-- Support Tools models
-- Support Structured format
-- Downloads model if missing
-- Chat with model
-- Generates embeddings with model
-- Get model details
-- Get list of available models
+**Example: Connecting to Supabase or Filesystem**
 
-### Functions
+```go
+// Configure the MCP Client
+// Example: Using the Supabase MCP Server
+config := gollama.McpConfig{
+    Command: "npx",
+    Args: []string{
+        "-y",
+        "@supabase/mcp-server-supabase@latest",
+        "--access-token", "sbp_your_token_here",
+    },
+    Env: map[string]string{
+        "SUPABASE_URL": "https://your-project.supabase.co",
+    },
+}
 
-- `New(model string) *Gollama` - Create a new Gollama
-- `NewWithConfig(config Gollama) *Gollama` - Create a new Gollama with a pre-populated config
-- `Chat(prompt string, ...ChatOption) (*gollama.ChatOutput, error)` - Generate a response
-- `Embedding(prompt string) ([]float64, error)` - Generate embeddings
-- `ListModels() ([]ModelInfo, error)` - List models available on ollama
-- `HasModel(model string) (bool, error)` - Check if model is available
-- `ModelSize(model string) (int, error)` - Get model size from ollama
-- `PullModel(model string) error` - Pull model
-- `PullIfMissing(model ...string) error` - Pull model if missing
-- `GetModels() ([]string, error)` - Get list of available models
-- `GetDetails(model ...string) ([]ModelDetails, error)` - Get model details from ollama
-- `Version() (string, error)` - Get ollama version
-- `StructToStructuredFormat(interface{}) StructuredFormat` - Converts a Go struct to a Gollama structured format
-- `CosenoSimilarity(vector1, vector2 []float64) float64` - Calculates the cosine similarity between two vectors
-- output.`DecodeContent(output interface{}) error` - Decodes the content of a Gollama response
+// Or use the Filesystem server
+// config := gollama.McpConfig{
+//     Command: "npx",
+//     Args: []string{"-y", "@modelcontextprotocol/server-filesystem", "."},
+// }
+
+client := gollama.NewMcpClient(config)
+defer client.Close()
+
+// Start connection
+if err := client.Start(ctx); err != nil {
+    panic(err)
+}
+
+// Get tools from the MCP server
+tools, _ := client.ListTools()
+
+// Pass them to Gollama
+output, _ := g.Chat(ctx, "List the users in the database", tools)
+
+// Execute tool calls requested by the model
+for _, call := range output.ToolCalls {
+    result, _ := client.CallTool(call.Function.Name, call.Function.Arguments)
+    fmt.Println("Tool Result:", result)
+}
+```
+
+### 3. Structured Outputs (JSON)
+Force the model to return data matching your Go struct definition.
+
+```go
+type Capital struct {
+    Country string `json:"country" description:"The name of the country"`
+    City    string `json:"city" description:"The capital city"`
+    Population int `json:"population" description:"Approximate population"`
+}
+
+// Convert struct to schema
+schema := gollama.StructToStructuredFormat(Capital{})
+
+resp, err := g.Chat(ctx, "Tell me about France", schema)
+
+// Decode directly into your struct
+var result Capital
+resp.DecodeContent(&result)
+
+fmt.Printf("%+v\n", result)
+```
+
+### 4. Vision
+Analyze images with multimodal models.
+
+```go
+g := gollama.New("llama3.2-vision")
+
+image := gollama.PromptImage{Filename: "./photo.png"}
+
+resp, err := g.Chat(ctx, "Describe this image", image)
+```
+
+## 📚 API Reference
+
+### Core Functions
+- `New(model string) *Gollama`: Initialize a new client.
+- `g.Chat(ctx, prompt, options...)`: Main entry point for interaction. Options can be `Tool`, `PromptImage`, or `StructuredFormat`.
+- `g.PullIfMissing(ctx)`: Ensures the model exists locally before running.
+
+### Utilities
+- `StructToStructuredFormat(v interface{})`: Generates a JSON schema from a Go struct.
+- `DecodeContent(v interface{})`: Unmarshals the JSON response into a struct.
+- `CosenoSimilarity(v1, v2 []float64)`: Helper for RAG/Embedding comparisons.
+
+### MCP (Model Context Protocol)
+- `NewMcpClient(config McpConfig)`: Creates a client to talk to any MCP-compliant server.
+- `client.ListTools()`: Discovers available tools on the server.
+- `client.CallTool(name, args)`: Executes a tool on the server.
+
+## 📄 License
+
+MIT

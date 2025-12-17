@@ -15,7 +15,7 @@ func TestGollama_Version(t *testing.T) {
 		{
 			name:    "Version",
 			c:       New("llama3.2"),
-			want:    "0.5.5",
+			want:    "0.13.4",
 			wantErr: false,
 		},
 	}

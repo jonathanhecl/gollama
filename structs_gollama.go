@@ -102,6 +102,10 @@ type ToolCall struct {
 	Function ToolCallFunction `json:"function"`
 }
 
+type ToolSource interface {
+	ListTools() ([]Tool, error)
+}
+
 // Output structs
 
 type ChatOuput struct {

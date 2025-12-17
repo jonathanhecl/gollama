@@ -51,54 +51,7 @@ func main() {
 }
 ```
 
-### 2. Model Context Protocol (MCP) 🌟
-Connect your LLM to the outside world using the standard Model Context Protocol. This allows you to use pre-built MCP servers without writing custom tool logic.
-
-**Example: Connecting to Supabase or Filesystem**
-
-```go
-// Configure the MCP Client
-// Example: Using the Supabase MCP Server
-config := gollama.McpConfig{
-    Command: "npx",
-    Args: []string{
-        "-y",
-        "@supabase/mcp-server-supabase@latest",
-        "--access-token", "sbp_your_token_here",
-    },
-    Env: map[string]string{
-        "SUPABASE_URL": "https://your-project.supabase.co",
-    },
-}
-
-// Or use the Filesystem server
-// config := gollama.McpConfig{
-//     Command: "npx",
-//     Args: []string{"-y", "@modelcontextprotocol/server-filesystem", "."},
-// }
-
-client := gollama.NewMcpClient(config)
-defer client.Close()
-
-// Start connection
-if err := client.Start(ctx); err != nil {
-    panic(err)
-}
-
-// Get tools from the MCP server
-tools, _ := client.ListTools()
-
-// Pass them to Gollama
-output, _ := g.Chat(ctx, "List the users in the database", tools)
-
-// Execute tool calls requested by the model
-for _, call := range output.ToolCalls {
-    result, _ := client.CallTool(call.Function.Name, call.Function.Arguments)
-    fmt.Println("Tool Result:", result)
-}
-```
-
-### 3. Structured Outputs (JSON)
+### 2. Structured Outputs (JSON)
 Force the model to return data matching your Go struct definition.
 
 ```go
@@ -120,7 +73,84 @@ resp.DecodeContent(&result)
 fmt.Printf("%+v\n", result)
 ```
 
-### 4. Vision
+### 3. Function Calling (Manual Tools)
+Define your own functions and let the model choose when to call them.
+
+```go
+// 1. Define the tool
+myTool := gollama.Tool{
+    Type: "function",
+    Function: gollama.ToolFunction{
+        Name:        "get_weather",
+        Description: "Get the current weather for a location",
+        Parameters: gollama.StructuredFormat{
+            Type: "object",
+            Properties: map[string]gollama.FormatProperty{
+                "location": {
+                    Type:        "string",
+                    Description: "City and state, e.g. San Francisco, CA",
+                },
+                "unit": {
+                    Type: "string",
+                    Enum: []string{"celsius", "fahrenheit"},
+                },
+            },
+            Required: []string{"location"},
+        },
+    },
+}
+
+// 2. Chat with the tool
+resp, err := g.Chat(ctx, "What's the weather in Madrid?", myTool)
+
+// 3. Handle the tool call
+for _, call := range resp.ToolCalls {
+    if call.Function.Name == "get_weather" {
+        args := call.Function.Arguments
+        fmt.Printf("Calling weather for %s\n", args["location"])
+    }
+}
+```
+
+### 4. Model Context Protocol (MCP) 🌟
+Connect your LLM to the outside world using the standard Model Context Protocol. This allows you to use pre-built MCP servers without writing custom tool logic.
+
+**Example: Connecting to Supabase**
+
+```go
+// Configure the MCP Client
+config := gollama.McpConfig{
+    Command: "npx",
+    Args: []string{
+        "-y",
+        "@supabase/mcp-server-supabase@latest",
+        "--access-token", "sbp_your_token_here",
+    },
+    Env: map[string]string{
+        "SUPABASE_URL": "https://your-project.supabase.co",
+    },
+}
+
+client := gollama.NewMcpClient(config)
+defer client.Close()
+
+// Start connection
+if err := client.Start(ctx); err != nil {
+    panic(err)
+}
+
+// Pass the client directly to Chat! (It implements ToolSource)
+output, _ := g.Chat(ctx, "List the users in the database", client)
+
+// Execute tool calls requested by the model
+for _, call := range output.ToolCalls {
+    // The client handles the execution details for you
+    result, _ := client.CallTool(call.Function.Name, call.Function.Arguments)
+    fmt.Println("Tool Result:", result)
+}
+```
+
+### 5. Vision
 Analyze images with multimodal models.
 
 ```go

@@ -39,6 +39,12 @@ func (c *Gollama) Chat(ctx context.Context, prompt string, options ...ChatOption
 			tools = append(tools, opt)
 		case []Tool:
 			tools = opt
+		case ToolSource:
+			t, err := opt.ListTools()
+			if err != nil {
+				return nil, err
+			}
+			tools = append(tools, t...)
 		case StructuredFormat:
 			format = opt
 		default:

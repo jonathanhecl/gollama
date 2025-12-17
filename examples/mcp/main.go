@@ -82,29 +82,15 @@ func main() {
 	defer client.Close()
 	fmt.Println("Connected!")
 
-	fmt.Println("Listing tools...")
-	tools, err := client.ListTools()
-	if err != nil {
-		log.Fatalf("Failed to list tools: %v", err)
-	}
-
-	for _, t := range tools {
-		fmt.Printf("- %s: %s\n", t.Function.Name, t.Function.Description)
-	}
-
-	if len(tools) == 0 {
-		fmt.Println("No tools found on the MCP server.")
-		return
-	}
-
 	// Initialize Gollama
 	g := gollama.New("llama3.2") // Ensure you have this model or change it
 
 	prompt := "List the files in the current directory using the available tools."
 	fmt.Printf("\nSending prompt to LLM: %q\n", prompt)
 
-	// Pass the MCP tools to Gollama
-	response, err := g.Chat(ctx, prompt, tools)
+	// Pass the MCP client directly to Gollama (implements ToolSource interface)
+	// This is cleaner than calling ListTools manually
+	response, err := g.Chat(ctx, prompt, client)
 	if err != nil {
 		log.Fatalf("Chat failed: %v", err)
 	}

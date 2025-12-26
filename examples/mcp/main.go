@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/jonathanhecl/gollama"
 )
@@ -73,7 +75,8 @@ func main() {
 	// 	log.Printf(format, args...)
 	// })
 
-	ctx := context.Background()
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
 
 	fmt.Println("Connecting to MCP server...")
 	if err := client.Start(ctx); err != nil {

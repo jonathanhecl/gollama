@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 
 	"github.com/jonathanhecl/gollama"
 )
@@ -20,7 +22,8 @@ var (
 )
 
 func main() {
-	ctx := context.Background()
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
 	m := gollama.New("llama3.2-vision")
 	m.PullIfMissing(ctx)
 

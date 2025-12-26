@@ -5,7 +5,9 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/jonathanhecl/chunker"
 	"github.com/jonathanhecl/gollama"
@@ -14,7 +16,8 @@ import (
 func main() {
 	fmt.Println("RAG Example")
 
-	ctx := context.Background()
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
 	filename := "text.txt"
 	embedding_model := "nomic-embed-text"
 	chat_model := "llama3.2"

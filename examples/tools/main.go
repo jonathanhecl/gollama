@@ -3,13 +3,17 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 
 	"github.com/jonathanhecl/gollama"
 )
 
 func main() {
-	ctx := context.Background()
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
 	g := gollama.New("llama3.2")
 	g.Verbose = true
 	if err := g.PullIfMissing(ctx); err != nil {
